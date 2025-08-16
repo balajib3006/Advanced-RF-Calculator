@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Microstrip Patch + Link Budget + SNR + Sensitivity — Full Calculator</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+  :root{--bg:#081128;--panel:#0f1830;--card:#0b1530;--muted:#9fb0dd;--text:#eaf0ff;--accent:#72c4ff;--ok:#28d09b;--warn:#ffbd4b}
+  *{box-sizing:border-box}
+  body{margin:18px;font-family:Inter,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+  header{max-width:1100px;margin:0 auto 14px;padding:0 12px}
+  h1{margin:0 0 6px;font-size:1.4rem}
+  p.lead{margin:0;color:var(--muted)}
+  main{max-width:1100px;margin:12px auto;padding:0 12px}
+  .tabs{display:flex;gap:8px;margin-bottom:12px}
+  .tab-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--text);padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:700}
+  .tab-btn.active{background:linear-gradient(180deg,#143060,#102a56);box-shadow:0 6px 18px rgba(0,0,0,0.4)}
+  .panel{background:var(--panel);border:1px solid rgba(255,255,255,0.03);padding:14px;border-radius:12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  label{display:block;color:var(--muted);font-weight:600;margin-bottom:6px}
+  .hint{display:block;color:#8393c6;font-size:0.82rem;margin-top:4px}
+  input[type=number],select{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:#0b1630;color:var(--text)}
+  .actions{display:flex;gap:10px;align-items:center;margin-top:8px}
+  button{background:linear-gradient(0deg,#17427a,#12305a);color:var(--text);padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);cursor:pointer;font-weight:700}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:14px}
+  .card{background:var(--card);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+  .card h3{margin:0 0 8px;font-size:1rem}
+  .row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.02)}
+  .row:last-child{border-bottom:none}
+  .name{color:var(--muted);font-size:0.95rem}
+  .val{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .note{color:var(--muted);font-size:0.86rem;margin-top:8px}
+  footer{max-width:1100px;margin:18px auto;color:var(--muted);font-size:0.85rem;padding:0 12px}
+  @media (max-width:520px){ .row{flex-direction:column;align-items:flex-start} .val{margin-top:6px} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Microstrip Patch + Link Budget + SNR & Sensitivity</h1>
+  <p class="lead">Patch design + feedline + link budget + noise/SNR + sensitivity & NF analysis. Tabbed UI.</p>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="tab-btn active" id="tabPatchBtn">Patch Antenna</button>
+    <button class="tab-btn" id="tabLinkBtn">Link Budget</button>
+  </div>
+
+  <!-- PATCH -->
+  <section id="tab-patch" class="panel">
+    <form onsubmit="return false;">
+      <div class="grid">
+        <div><label>Frequency (GHz)</label><input id="p_freq" type="number" step="any" value="2.45"><span class="hint">Center freq</span></div>
+        <div><label>Dielectric (εr)</label><input id="p_er" type="number" step="any" value="4.4"></div>
+        <div><label>Substrate height (mm)</label><input id="p_hmm" type="number" step="any" value="1.6"></div>
+        <div><label>Loss tangent (tanδ)</label><input id="p_tanD" type="number" step="any" value="0.002"></div>
+        <div><label>Desired feed Z₀ (Ω)</label><input id="p_Z0" type="number" step="any" value="50"></div>
+        <div><label>Aperture efficiency η_ap</label><input id="p_etaap" type="number" step="any" value="0.7"></div>
+        <div class="actions" style="grid-column:1/-1"><button onclick="calcPatch()">Calculate Patch</button><button onclick="clearPatch()">Clear</button></div>
+      </div>
+    </form>
+    <div id="patchResults" class="cards"></div>
+  </section>
+
+  <!-- LINK -->
+  <section id="tab-link" class="panel" style="display:none">
+    <form onsubmit="return false;">
+      <div class="grid">
+        <div><label>Frequency (GHz)</label><input id="l_freq" type="number" step="any" value="2.45"></div>
+        <div><label>Distance (m)</label><input id="l_dist" type="number" step="any" value="100"></div>
+        <div><label>TX power value</label><input id="l_txval" type="number" step="any" value="20"><span class="hint">Enter numerical value then pick units</span></div>
+        <div><label>TX power units</label><select id="l_txunit"><option>dBm</option><option>W</option></select></div>
+        <div><label>TX Gain (dBi)</label><input id="l_Gt" type="number" step="any" value="6"></div>
+        <div><label>RX Gain (dBi)</label><input id="l_Gr" type="number" step="any" value="6"></div>
+        <div><label>System losses (dB)</label><input id="l_losses" type="number" step="any" value="2"></div>
+        <div><label>Antenna efficiency η (0–1)</label><input id="l_eta" type="number" step="any" value="0.7"></div>
+
+        <!-- noise / sensitivity -->
+        <div><label>Bandwidth (Hz)</label><input id="l_BW" type="number" step="any" value="2000000"><span class="hint">e.g., 2e6 for 2 MHz</span></div>
+        <div><label>Receiver Noise Figure NF (dB)</label><input id="l_NF" type="number" step="any" value="5"></div>
+        <div><label>Required SNR (dB)</label><input id="l_reqSNR" type="number" step="any" value="10"></div>
+        <div>
+          <label>Modulation presets</label>
+          <select id="l_mod" onchange="applyModPreset()">
+            <option value="">— choose modulation (fills Required SNR) —</option>
+            <option value="3">BPSK / QPSK (3 dB)</option>
+            <option value="8">QPSK robust (8 dB)</option>
+            <option value="12">16-QAM (12 dB)</option>
+            <option value="18">64-QAM (18 dB)</option>
+            <option value="25">256-QAM (25 dB)</option>
+          </select>
+        </div>
+
+        <div><label>Measured Sensitivity (dBm) — optional</label><input id="l_measSens" type="number" step="any" placeholder="leave blank if unknown"></div>
+        <div><label>Target Fade Margin (dB)</label><input id="l_targetFade" type="number" step="any" value="10"></div>
+
+        <div class="actions" style="grid-column:1/-1"><button onclick="calcLink()">Calculate Link</button><button onclick="clearLink()">Clear</button></div>
+      </div>
+    </form>
+
+    <div id="linkResults" class="cards"></div>
+  </section>
+
+</main>
+
+<footer><div class="note">Engineering approximations only. Validate with measurement / EM simulation for production designs.</div></footer>
+
+<script>
+  // Tab switching
+  document.getElementById('tabPatchBtn').addEventListener('click', ()=>switchTab('patch'));
+  document.getElementById('tabLinkBtn').addEventListener('click', ()=>switchTab('link'));
+  function switchTab(name){
+    document.getElementById('tab-patch').style.display = name==='patch' ? '' : 'none';
+    document.getElementById('tab-link').style.display  = name==='link' ? '' : 'none';
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    (name==='patch' ? document.getElementById('tabPatchBtn') : document.getElementById('tabLinkBtn')).classList.add('active');
+  }
+
+  // Helpers
+  const c = 299792458;
+  const fmt = (v,d=3)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
+  const fmt2 = (v,d=2)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
+  const clamp = (x,lo,hi)=>Math.min(Math.max(x,lo),hi);
+
+  // Modulation presets
+  function applyModPreset(){
+    const sel = document.getElementById('l_mod').value;
+    if(sel!==''){ document.getElementById('l_reqSNR').value = parseFloat(sel); }
+  }
+
+  // Microstrip width (Hammerstad/Jensen)
+  function microstripWidth(Z0, er, h){
+    const A = (Z0/60)*Math.sqrt((er+1)/2) + ((er-1)/(er+1))*(0.23 + 0.11/er);
+    let w_h;
+    if (Z0 <= (120*Math.PI)/Math.sqrt(er+1)){
+      w_h = (8*Math.exp(A)) / (Math.exp(2*A) - 2);
+    } else {
+      const B = (377*Math.PI) / (2*Z0*Math.sqrt(er));
+      w_h = (2/Math.PI) * ( B - 1 - Math.log(2*B - 1) + ((er-1)/(2*er)) * (Math.log(B-1) + 0.39 - 0.61/er) );
+    }
+    const Wf = w_h * h;
+    const eps_eff_line = (er+1)/2 + (er-1)/2 * (1/Math.sqrt(1 + 12*h/Wf));
+    return {Wf, eps_eff_line, w_h};
+  }
+
+  /* ---------- Patch calculation ---------- */
+  function clearPatch(){ document.getElementById('patchResults').innerHTML = ''; }
+  function calcPatch(){
+    const fGHz = parseFloat(document.getElementById('p_freq').value);
+    const er = parseFloat(document.getElementById('p_er').value);
+    const h_mm = parseFloat(document.getElementById('p_hmm').value);
+    const tanD = parseFloat(document.getElementById('p_tanD').value);
+    const Z0 = parseFloat(document.getElementById('p_Z0').value);
+    const eta_ap = parseFloat(document.getElementById('p_etaap').value);
+    if (![fGHz,er,h_mm,tanD,Z0,eta_ap].every(v=>Number.isFinite(v))){ alert('Fill all patch fields'); return; }
+    if (!(fGHz>0 && er>1 && h_mm>0 && tanD>0 && Z0>0 && eta_ap>0 && eta_ap<=1)){ alert('Check inputs'); return; }
+    const f = fGHz*1e9; const h = h_mm/1000; const lambda0 = c/f;
+    const W = (c/(2*f))*Math.sqrt(2/(er+1));
+    const erEff = (er+1)/2 + (er-1)/2 * (1/Math.sqrt(1 + 12*h/W));
+    const W_h = W/h;
+    const dL = 0.412 * h * ((erEff + 0.3)*(W_h + 0.264)) / ((erEff - 0.258)*(W_h + 0.8));
+    const Leff = c / (2 * f * Math.sqrt(erEff));
+    const L = Leff - 2*dL; if(!(L>0)){ alert('Non-physical L'); return; }
+    const Lsub = 6*L, Wsub = 6*W;
+    const lambdaEff = lambda0 / Math.sqrt(erEff);
+    const Qd = 1/tanD; const Qr = (Math.PI*Math.sqrt(erEff)*L)/(2*h); const Q_total = (Qd*Qr)/(Qd+Qr);
+    const BWpct = (3.77/Math.sqrt(er))*(h/lambda0)*100;
+    const Rin_edge = 90 / Math.pow(W / lambda0, 2);
+    let yin_m=0, inset_note='';
+    if(Z0 <= Rin_edge){ yin_m = (L / Math.PI) * Math.acos(Math.sqrt(clamp(Z0/Rin_edge,0,1))); } else { yin_m=0; inset_note=' (Z₀ > R_edge — inset matching not possible)'; }
+    const insetLen = W/2, insetW = W/10;
+    function fmn(m,n){ return (c/(2*Math.sqrt(erEff))) * Math.sqrt(Math.pow(m/Leff,2)+Math.pow(n/W,2)); }
+    const modes = [{name:'TM10 (fund.)',f:fmn(1,0)},{name:'TM01',f:fmn(0,1)},{name:'TM20',f:fmn(2,0)},{name:'TM11',f:fmn(1,1)},{name:'TM02',f:fmn(0,2)}];
+    const Aphys = L*W; const D_lin = eta_ap * (4*Math.PI*Aphys)/(lambda0*lambda0); const D_dBi = 10*Math.log10(D_lin); const eta_rad = Qr/(Qr+Qd); const G_lin = eta_rad * D_lin; const G_dBi = 10*Math.log10(G_lin);
+    const feed = microstripWidth(Z0, er, h); const Wf_mm = feed.Wf*1000;
+    // render
+    const container = document.getElementById('patchResults'); container.innerHTML='';
+    function makeCard(title, rowsHtml){ const d=document.createElement('div'); d.className='card'; d.innerHTML=`<h3>${title}</h3>${rowsHtml}`; return d; }
+    function r(n,v){ return `<div class="row"><div class="name">${n}</div><div class="val">${v}</div></div>`; }
+    let html='';
+    html += r('Wavelength (λ₀)', `${fmt2(lambda0*1000,2)} mm`);
+    html += r('Effective Wavelength', `${fmt2(lambdaEff*1000,2)} mm`);
+    html += r('Effective Permittivity ε_eff', `${fmt(erEff,4)}`);
+    container.appendChild(makeCard('Wavelengths & Permittivity', html));
+    html=''; html+=r('Patch Width W', `${fmt2(W*1000,3)} mm`); html+=r('Patch Length L', `${fmt2(L*1000,3)} mm`); html+=r('Effective Length L_eff', `${fmt2(Leff*1000,3)} mm`); container.appendChild(makeCard('Patch Geometry', html));
+    html=''; html+=r('Substrate Length (≈6×)', `${fmt2(Lsub*1000,3)} mm`); html+=r('Substrate Width (≈6×)', `${fmt2(Wsub*1000,3)} mm`); html+=`<div class="note">Use ≥6× patch dims to reduce edge effects; increase for thick/low-εr substrates.</div>`; container.appendChild(makeCard('Substrate (rule-of-thumb)', html));
+    html=''; html+=r('Dielectric Q (Qd)', `${fmt(Qd,2)}`); html+=r('Radiation Q (Qr)', `${fmt(Qr,2)}`); html+=r('Combined Q', `${fmt(Q_total,2)}`); html+=r('Bandwidth (est.)', `${fmt(BWpct,2)} %`); html+=`<div class="note">BW & Q do not include conductor/surface-wave losses. Use EM simulation for final BW.</div>`; container.appendChild(makeCard('Q & Bandwidth', html));
+    html=''; html+=r('Edge Input Resistance R_edge (est.)', `${fmt(Rin_edge,2)} Ω`); html+=r(`Inset Depth y (Z₀=${fmt2(Z0,0)} Ω)`, `${fmt2(yin_m*1000,3)} mm${inset_note}`); html+=r('Inset Feed Length (suggest)', `${fmt2(insetLen*1000,3)} mm`); html+=r('Inset Feed Width (suggest)', `${fmt2(insetW*1000,3)} mm`); html+=`<div class="note">Model: R_in(y)=R_edge ⋅ cos²(π y / L). If Z₀ > R_edge, inset matching is not possible.</div>`; container.appendChild(makeCard('Inset Feed & Edge Resistance', html));
+    html=''; html+=r(`Microstrip Feedline W_f (Z₀=${fmt2(Z0,0)} Ω)`, `${fmt2(Wf_mm,3)} mm`); html+=r('Feedline w/h', `${fmt(feed.w_h,4)}`); html+=r('Feedline ε_eff', `${fmt(feed.eps_eff_line,4)}`); html+=`<div class="note">Width computed with Hammerstad/Jensen closed-form.</div>`; container.appendChild(makeCard('Microstrip Feedline', html));
+    html=''; modes.forEach(m=>html+=r(m.name,`${fmt2(m.f/1e9,4)} GHz`)); html+=`<div class="note">Cavity-model estimates; verify with full-wave EM.</div>`; container.appendChild(makeCard('Multi-mode Frequencies', html));
+    html=''; html+=r('Aperture Area A', `${fmt2(Aphys*1e6,2)} mm²`); html+=r('Aperture Efficiency η_ap (user)', `${fmt(eta_ap,3)}`); html+=r('Radiation Efficiency η_rad (≈Qr/(Qr+Qd))', `${fmt(eta_rad,3)}`); html+=r('Directivity (dBi)', `${fmt2(D_dBi,2)} dBi`); html+=r('Gain (dBi, est.)', `${fmt2(G_dBi,2)} dBi`); html+=`<div class="note">Gain uses η_rad from Qs; conductor & surface waves not included.</div>`; container.appendChild(makeCard('Radiation Performance (est.)', html));
+  }
+
+  /* ---------- Link budget + SNR + sensitivity + NF calculations ---------- */
+  function clearLink(){ document.getElementById('linkResults').innerHTML = ''; }
+  function calcLink(){
+    // read inputs
+    const fGHz = parseFloat(document.getElementById('l_freq').value);
+    const d = parseFloat(document.getElementById('l_dist').value);
+    const txVal = parseFloat(document.getElementById('l_txval').value);
+    const txUnit = document.getElementById('l_txunit').value;
+    const Gt = parseFloat(document.getElementById('l_Gt').value);
+    const Gr = parseFloat(document.getElementById('l_Gr').value);
+    const losses = parseFloat(document.getElementById('l_losses').value);
+    const eta = parseFloat(document.getElementById('l_eta').value);
+    const BW = parseFloat(document.getElementById('l_BW').value);
+    const NF = parseFloat(document.getElementById('l_NF').value);
+    const reqSNR = parseFloat(document.getElementById('l_reqSNR').value);
+    const measSens = parseFloat(document.getElementById('l_measSens').value); // optional
+    const targetFade = parseFloat(document.getElementById('l_targetFade').value);
+
+    if (![fGHz,d,txVal,Gt,Gr,losses,eta,BW,NF,reqSNR,targetFade].every(v=>Number.isFinite(v))){ alert('Fill all link fields (measured sensitivity optional)'); return; }
+    if (!(fGHz>0 && d>0 && (txUnit==='dBm' || txVal>0) && eta>0 && eta<=1 && BW>0)){ alert('Check link inputs'); return; }
+
+    const f = fGHz*1e9;
+    const lambda = c / f;
+
+    // TX power conversion
+    let Ptx_dBm, Ptx_W;
+    if (txUnit === 'dBm'){ Ptx_dBm = txVal; Ptx_W = Math.pow(10,(Ptx_dBm-30)/10); } else { Ptx_W = txVal; Ptx_dBm = 10*Math.log10(Ptx_W)+30; }
+
+    // FSPL
+    const FSPL_dB = 20*Math.log10(4*Math.PI*d / lambda);
+
+    // EIRP
+    const EIRP_dBm = Ptx_dBm + Gt;
+
+    // Received power (including antenna efficiency and system losses)
+    const eta_dB = 10*Math.log10(eta);
+    const Pr_dBm = EIRP_dBm + Gr - FSPL_dB - losses + eta_dB;
+    const Pr_W = Math.pow(10,(Pr_dBm-30)/10);
+
+    // Friis linear check
+    const Gt_lin = Math.pow(10,Gt/10), Gr_lin = Math.pow(10,Gr/10);
+    const Lsys_lin = Math.pow(10,losses/10);
+    const Pr_lin_check = Ptx_W * Gt_lin * Gr_lin * Math.pow(lambda/(4*Math.PI*d),2) * eta / Lsys_lin;
+    const Pr_dBm_check = 10*Math.log10(Pr_lin_check) + 30;
+
+    // Noise power from kTB + NF: N_dBm = -174 + 10 log10(B) + NF
+    const N0_dBmHz = -174;
+    const N_dBm = N0_dBmHz + 10*Math.log10(BW) + NF;
+    const N_W = Math.pow(10,(N_dBm-30)/10);
+
+    // Sensitivity calculation:
+    // If measured sensitivity is provided (measSens), use it directly and compute implied NF.
+    // Otherwise compute sensitivity from NF and reqSNR:
+    // Sens (dBm) = -174 + 10 log10(B) + NF + reqSNR
+    let sensitivity_dBm, implied_NF;
+    if (Number.isFinite(measSens)){
+      sensitivity_dBm = measSens;
+      implied_NF = sensitivity_dBm - (N0_dBmHz + 10*Math.log10(BW) + reqSNR); // NF implied by measured sensitivity
+    } else {
+      sensitivity_dBm = N_dBm + reqSNR;
+      implied_NF = null;
+    }
+
+    // SNR at receiver
+    const SNR_dB = Pr_dBm - N_dBm;
+    const SNR_lin = Math.pow(10, SNR_dB/10);
+
+    // Fade margin computed from Rx power and sensitivity
+    // Fade margin (actual) = Pr_dBm - sensitivity_dBm
+    const fade_margin_actual_dB = Pr_dBm - sensitivity_dBm;
+
+    // Maximum allowable NF to meet a target fade margin (NF_max)
+    // NF_max = Pr_dBm - targetFade - (-174 + 10log10(B) + reqSNR)
+    const NF_max = Pr_dBm - targetFade - (N0_dBmHz + 10*Math.log10(BW) + reqSNR);
+
+    // Shannon capacity
+    const C_bps = BW * Math.log2(1 + Math.max(0, SNR_lin));
+    const C_Mbps = C_bps / 1e6;
+    const C_Gbps = C_bps / 1e9;
+
+    // Render results
+    const container = document.getElementById('linkResults'); container.innerHTML = '';
+    function makeCard(t,rowsHtml){ const d=document.createElement('div'); d.className='card'; d.innerHTML=`<h3>${t}</h3>`+rowsHtml; return d; }
+    function r(n,v){ return `<div class="row"><div class="name">${n}</div><div class="val">${v}</div></div>`; }
+
+    let html='';
+    html += r('TX Power (dBm)', `${fmt2(Ptx_dBm,2)} dBm`);
+    html += r('TX Power (W)', `${fmt(Ptx_W,8)} W`);
+    html += r('TX Gain (dBi)', `${fmt2(Gt,2)} dBi`);
+    html += r('RX Gain (dBi)', `${fmt2(Gr,2)} dBi`);
+    container.appendChild(makeCard('Tx / Rx Parameters', html));
+
+    html='';
+    html += r('Frequency', `${fmt2(fGHz,3)} GHz`);
+    html += r('Distance', `${fmt2(d,2)} m`);
+    html += r('Wavelength', `${fmt2(lambda*1000,3)} mm`);
+    container.appendChild(makeCard('Link Geometry', html));
+
+    html='';
+    html += r('FSPL (dB)', `${fmt2(FSPL_dB,3)} dB`);
+    html += r('System Losses (dB)', `${fmt2(losses,2)} dB`);
+    html += r('EIRP (dBm)', `${fmt2(EIRP_dBm,2)} dBm`);
+    container.appendChild(makeCard('Path & EIRP', html));
+
+    html='';
+    html += r('Received Power (dBm) [incl. η]', `${fmt2(Pr_dBm,3)} dBm`);
+    html += r('Received Power (W)', `${fmt(Pr_W,12)} W`);
+    html += r('Friis linear check (dBm)', `${fmt2(Pr_dBm_check,3)} dBm`);
+    html += `<div class="note">Pr computed both by dB algebra and linear Friis; values should match (small rounding differences possible).</div>`;
+    container.appendChild(makeCard('Received Power', html));
+
+    html='';
+    html += r('Noise Power N (dBm)', `${fmt2(N_dBm,3)} dBm`);
+    html += r('Noise Power (W)', `${fmt(N_W,12)} W`);
+    html += r('Receiver NF (input field) (dB)', `${fmt2(NF,2)} dB`);
+    html += r('Bandwidth (Hz)', `${fmt2(BW,2)} Hz`);
+    container.appendChild(makeCard('Noise', html));
+
+    html='';
+    html += r('Required SNR (dB)', `${fmt2(reqSNR,2)} dB`);
+    html += r('Computed SNR (dB)', `${fmt2(SNR_dB,3)} dB`);
+    html += r('SNR (linear)', `${fmt(SNR_lin,6)}`);
+    container.appendChild(makeCard('SNR', html));
+
+    // Sensitivity & NF card
+    html='';
+    html += r('Computed Sensitivity (dBm)', `${fmt2(sensitivity_dBm,3)} dBm`);
+    if (Number.isFinite(measSens)){
+      html += r('Measured Sensitivity provided (dBm)', `${fmt2(measSens,3)} dBm`);
+      html += r('Implied NF from measured sensitivity (dB)', `${fmt2(implied_NF,3)} dB`);
+    } else {
+      html += r('NF used (dB)', `${fmt2(NF,3)} dB`);
+    }
+    html += r('Actual Fade Margin (Pr - Sens) (dB)', `${fmt2(fade_margin_actual_dB,3)} dB`);
+    html += r('Target Fade Margin (user)', `${fmt2(targetFade,2)} dB`);
+    html += r('Max allowable NF for target fade (dB)', `${fmt2(NF_max,3)} dB`);
+    html += `<div class="note">If NF_max < 0 dB then target fade margin cannot be met with any practical receiver NF.</div>`;
+    container.appendChild(makeCard('Sensitivity, Fade Margin & NF', html));
+
+    // Shannon
+    html='';
+    html += r('Shannon Capacity (bps)', `${fmt2(C_bps,0)} bps`);
+    html += r('Shannon Capacity (Mbps)', `${fmt2(C_Mbps,3)} Mbps`);
+    html += r('Shannon Capacity (Gbps)', `${fmt2(C_Gbps,6)} Gbps`);
+    html += `<div class="note">Shannon capacity is theoretical. Real systems require coding, overhead and SNR margins.</div>`;
+    container.appendChild(makeCard('Shannon Capacity', html));
+
+    // Scroll into view
+    setTimeout(()=>{ container.scrollIntoView({behavior:'smooth'}); }, 50);
+  }
+
+  // start on patch
+  switchTab('patch');
+</script>
+</body>
+</html>
