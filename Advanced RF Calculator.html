@@ -44,14 +44,14 @@
 
   <!-- PATCH -->
   <section id="tab-patch" class="panel">
-    <form onsubmit="return false;">
+    <form id="patchForm" onsubmit="return false;">
       <div class="grid">
-        <div><label>Frequency (GHz)</label><input id="p_freq" type="number" step="any" value=""><span class="hint">Center freq</span></div>
-        <div><label>Dielectric (εr)</label><input id="p_er" type="number" step="any" value="4.4"></div>
-        <div><label>Substrate height (mm)</label><input id="p_hmm" type="number" step="any" value="1.6"></div>
-        <div><label>Loss tangent (tanδ)</label><input id="p_tanD" type="number" step="any" value="0.002"></div>
-        <div><label>Desired feed Z₀ (Ω)</label><input id="p_Z0" type="number" step="any" value="50"></div>
-        <div><label>Aperture efficiency η_ap</label><input id="p_etaap" type="number" step="any" value="0.7"></div>
+        <div><label>Frequency (GHz)</label><input id="p_freq" type="number" step="any"><span class="hint">Center freq</span></div>
+        <div><label>Dielectric (εr)</label><input id="p_er" type="number" step="any"></div>
+        <div><label>Substrate height (mm)</label><input id="p_hmm" type="number" step="any"></div>
+        <div><label>Loss tangent (tanδ)</label><input id="p_tanD" type="number" step="any"></div>
+        <div><label>Desired feed Z₀ (Ω)</label><input id="p_Z0" type="number" step="any"></div>
+        <div><label>Aperture efficiency η_ap</label><input id="p_etaap" type="number" step="any"></div>
         <div class="actions" style="grid-column:1/-1"><button onclick="calcPatch()">Calculate Patch</button><button onclick="clearPatch()">Clear</button></div>
       </div>
     </form>
@@ -60,21 +60,21 @@
 
   <!-- LINK -->
   <section id="tab-link" class="panel" style="display:none">
-    <form onsubmit="return false;">
+    <form id="linkForm" onsubmit="return false;">
       <div class="grid">
-        <div><label>Frequency (GHz)</label><input id="l_freq" type="number" step="any" value="2.45"></div>
-        <div><label>Distance (m)</label><input id="l_dist" type="number" step="any" value="100"></div>
-        <div><label>TX power value</label><input id="l_txval" type="number" step="any" value="20"><span class="hint">Enter numerical value then pick units</span></div>
+        <div><label>Frequency (GHz)</label><input id="l_freq" type="number" step="any"></div>
+        <div><label>Distance (m)</label><input id="l_dist" type="number" step="any"></div>
+        <div><label>TX power value</label><input id="l_txval" type="number" step="any"><span class="hint">Enter numerical value then pick units</span></div>
         <div><label>TX power units</label><select id="l_txunit"><option>dBm</option><option>W</option></select></div>
-        <div><label>TX Gain (dBi)</label><input id="l_Gt" type="number" step="any" value="6"></div>
-        <div><label>RX Gain (dBi)</label><input id="l_Gr" type="number" step="any" value="6"></div>
-        <div><label>System losses (dB)</label><input id="l_losses" type="number" step="any" value="2"></div>
-        <div><label>Antenna efficiency η (0–1)</label><input id="l_eta" type="number" step="any" value="0.7"></div>
+        <div><label>TX Gain (dBi)</label><input id="l_Gt" type="number" step="any"></div>
+        <div><label>RX Gain (dBi)</label><input id="l_Gr" type="number" step="any"></div>
+        <div><label>System losses (dB)</label><input id="l_losses" type="number" step="any"></div>
+        <div><label>Antenna efficiency η (0–1)</label><input id="l_eta" type="number" step="any"></div>
 
         <!-- noise / sensitivity -->
-        <div><label>Bandwidth (Hz)</label><input id="l_BW" type="number" step="any" value="2000000"><span class="hint">e.g., 2e6 for 2 MHz</span></div>
-        <div><label>Receiver Noise Figure NF (dB)</label><input id="l_NF" type="number" step="any" value="5"></div>
-        <div><label>Required SNR (dB)</label><input id="l_reqSNR" type="number" step="any" value="10"></div>
+        <div><label>Bandwidth (Hz)</label><input id="l_BW" type="number" step="any"><span class="hint">e.g., 2e6 for 2 MHz</span></div>
+        <div><label>Receiver Noise Figure NF (dB)</label><input id="l_NF" type="number" step="any"></div>
+        <div><label>Required SNR (dB)</label><input id="l_reqSNR" type="number" step="any"></div>
         <div>
           <label>Modulation presets</label>
           <select id="l_mod" onchange="applyModPreset()">
@@ -88,7 +88,7 @@
         </div>
 
         <div><label>Measured Sensitivity (dBm) — optional</label><input id="l_measSens" type="number" step="any" placeholder="leave blank if unknown"></div>
-        <div><label>Target Fade Margin (dB)</label><input id="l_targetFade" type="number" step="any" value="10"></div>
+        <div><label>Target Fade Margin (dB)</label><input id="l_targetFade" type="number" step="any"></div>
 
         <div class="actions" style="grid-column:1/-1"><button onclick="calcLink()">Calculate Link</button><button onclick="clearLink()">Clear</button></div>
       </div>
@@ -140,7 +140,11 @@
   }
 
   /* ---------- Patch calculation ---------- */
-  function clearPatch(){ document.getElementById('patchResults').innerHTML = ''; }
+  function clearPatch() {
+ const f = document.getElementById('patchForm');
+ if (f) f.reset();
+ document.getElementById('patchResults').innerHTML = '';
+}
   function calcPatch(){
     const fGHz = parseFloat(document.getElementById('p_freq').value);
     const er = parseFloat(document.getElementById('p_er').value);
@@ -157,7 +161,7 @@
     const dL = 0.412 * h * ((erEff + 0.3)*(W_h + 0.264)) / ((erEff - 0.258)*(W_h + 0.8));
     const Leff = c / (2 * f * Math.sqrt(erEff));
     const L = Leff - 2*dL; if(!(L>0)){ alert('Non-physical L'); return; }
-    const Lsub = 6*L, Wsub = 6*W;
+    const Lsub = 6*h+L, Wsub = 6*h+W;
     const lambdaEff = lambda0 / Math.sqrt(erEff);
     const Qd = 1/tanD; const Qr = (Math.PI*Math.sqrt(erEff)*L)/(2*h); const Q_total = (Qd*Qr)/(Qd+Qr);
     const BWpct = (3.77/Math.sqrt(er))*(h/lambda0)*100;
@@ -188,7 +192,11 @@
   }
 
   /* ---------- Link budget + SNR + sensitivity + NF calculations ---------- */
-  function clearLink(){ document.getElementById('linkResults').innerHTML = ''; }
+  function clearLink() {
+ const f = document.getElementById('linkForm');
+ if (f) f.reset();
+ document.getElementById('linkResults').innerHTML = '';
+}
   function calcLink(){
     // read inputs
     const fGHz = parseFloat(document.getElementById('l_freq').value);
