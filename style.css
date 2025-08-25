@@ -1,0 +1,186 @@
+:root {
+  --bg1:#0f2027;
+  --bg2:#203a43;
+  --bg3:#2c5364;
+  --panel:#141a27;
+  --card:#1a2235;
+  --muted:#9aa8c7;
+  --text:#f2f6ff;
+  --accent:#3ef0c5;
+  --ok:#2ee68b;
+  --warn:#ffc857;
+  --error:#ff5f5f;
+}
+
+/* Base */
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter,Segoe UI,Roboto,Arial;
+  background: radial-gradient(circle at top left, var(--bg1), var(--bg2), var(--bg3));
+  color:var(--text);
+  line-height:1.5;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+/* Layout */
+header,main,footer{
+  max-width:1100px;
+  margin:0 auto;
+  width:100%;
+  padding:12px 16px;
+}
+header{text-align:center;margin-top:12px}
+h1{margin:0 0 6px;font-size:1.6rem;color:var(--accent)}
+p.lead{margin:0;color:var(--muted)}
+
+/* Tabs */
+.tabs{
+  display:flex;
+  gap:8px;
+  margin:14px auto;
+  overflow-x:auto;
+  padding-bottom:6px;
+  scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab-btn{
+  flex:0 0 auto;
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.08);
+  color:var(--text);
+  padding:7px 11px; /* slightly compact */
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:600;
+  font-size:0.9rem;
+  transition:all 0.25s;
+  white-space:nowrap;
+}
+.tab-btn:hover{border-color:var(--accent);color:var(--accent)}
+.tab-btn.active{
+  background:linear-gradient(180deg,#1d2b3f,#151e2e);
+  box-shadow:0 3px 10px rgba(0,0,0,0.5),0 0 5px var(--accent);
+}
+
+/* Custom highlight for Patch + Link Budget */
+#tabPatchBtn{
+  background:linear-gradient(180deg,#2e8b57,#1c5f3a);
+  font-weight:700;
+}
+#tabLinkBtn{
+  background:linear-gradient(180deg,#17427a,#12305a);
+  font-weight:700;
+}
+
+/* Panels */
+.panel{
+  background:var(--panel);
+  border:1px solid rgba(255,255,255,0.05);
+  padding:16px;
+  border-radius:12px;
+  box-shadow:0 3px 10px rgba(0,0,0,0.4);
+  animation:fadeIn 0.4s ease;
+}
+
+/* Grid */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;
+}
+
+/* Form */
+label{display:block;color:var(--muted);font-weight:600;margin-bottom:6px}
+.hint{display:block;color:#8393c6;font-size:0.82rem;margin-top:4px}
+input[type=number],select{
+  width:100%;
+  padding:9px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.05);
+  background:var(--card);
+  color:var(--text);
+  font-size:0.9rem;
+  transition:border-color 0.3s,box-shadow 0.3s;
+}
+input:focus,select:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 5px var(--accent);
+  outline:none;
+}
+
+/* Actions */
+.actions{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+button{
+  background:linear-gradient(0deg,#233656,#1a2742);
+  color:var(--text);
+  padding:8px 12px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.05);
+  cursor:pointer;
+  font-weight:600;
+  font-size:0.9rem;
+  transition:transform 0.2s,box-shadow 0.2s;
+}
+button:hover{transform:translateY(-2px);box-shadow:0 0 6px var(--accent)}
+
+/* Cards */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:14px;
+  margin-top:16px;
+}
+.card{
+  background:var(--card);
+  padding:14px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.05);
+  box-shadow:0 2px 8px rgba(0,0,0,0.35);
+  transition:transform 0.25s;
+}
+.card:hover{transform:scale(1.02);box-shadow:0 0 8px var(--accent)}
+.card h3{margin:0 0 10px;font-size:1.05rem;color:var(--accent)}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  padding:8px 0;
+  border-bottom:1px dashed rgba(255,255,255,0.05);
+}
+.row:last-child{border-bottom:none}
+.name{color:var(--muted);font-size:0.9rem}
+.val{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1rem}
+
+/* Footer */
+footer{
+  margin-top:auto;
+  color:var(--muted);
+  font-size:0.85rem;
+  text-align:center;
+  padding:14px;
+}
+
+/* Responsive */
+@media (max-width:768px){
+  h1{font-size:1.4rem}
+  .tab-btn{padding:6px 10px;font-size:0.85rem}
+  .grid{gap:10px}
+  .cards{gap:10px}
+}
+@media (max-width:480px){
+  h1{font-size:1.2rem}
+  .tab-btn{padding:5px 8px;font-size:0.8rem}
+  .actions{flex-direction:column;align-items:stretch}
+  .row{flex-direction:column;align-items:flex-start}
+  .val{margin-top:6px}
+}
+
+/* Anim */
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
