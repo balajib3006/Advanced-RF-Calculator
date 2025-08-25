@@ -164,8 +164,8 @@
     const Lsub = 6*h+L, Wsub = 6*h+W;
     const lambdaEff = lambda0 / Math.sqrt(erEff);
     const Qd = 1/tanD; const Qr = (Math.PI*Math.sqrt(erEff)*L)/(2*h); const Q_total = (Qd*Qr)/(Qd+Qr);
-    const BWpct = (3.77/Math.sqrt(er))*(h/lambda0)*100;
-    const Rin_edge = 90 / Math.pow(W / lambda0, 2);
+    const BWpct = 3.771 * (er - 1 / Math.pow(er, 2)) * (h/lambda0) * (W / L);
+    const Rin_edge = 90 * (Math.pow(er, 2) / er - 1) * (L / W);
     let yin_m=0, inset_note='';
     if(Z0 <= Rin_edge){ yin_m = (L / Math.PI) * Math.acos(Math.sqrt(clamp(Z0/Rin_edge,0,1))); } else { yin_m=0; inset_note=' (Z₀ > R_edge — inset matching not possible)'; }
     const insetLen = W/2, insetW = W/10;
@@ -184,7 +184,7 @@
     container.appendChild(makeCard('Wavelengths & Permittivity', html));
     html=''; html+=r('Patch Width W', `${fmt2(W*1000,3)} mm`); html+=r('Patch Length L', `${fmt2(L*1000,3)} mm`); html+=r('Effective Length L_eff', `${fmt2(Leff*1000,3)} mm`); container.appendChild(makeCard('Patch Geometry', html));
     html=''; html+=r('Substrate Length (≈6×)', `${fmt2(Lsub*1000,3)} mm`); html+=r('Substrate Width (≈6×)', `${fmt2(Wsub*1000,3)} mm`); html+=`<div class="note">Use ≥6× patch dims to reduce edge effects; increase for thick/low-εr substrates.</div>`; container.appendChild(makeCard('Substrate (rule-of-thumb)', html));
-    html=''; html+=r('Dielectric Q (Qd)', `${fmt(Qd,2)}`); html+=r('Radiation Q (Qr)', `${fmt(Qr,2)}`); html+=r('Combined Q', `${fmt(Q_total,2)}`); html+=r('Bandwidth (est.)', `${fmt(BWpct,2)} %`); html+=`<div class="note">BW & Q do not include conductor/surface-wave losses. Use EM simulation for final BW.</div>`; container.appendChild(makeCard('Q & Bandwidth', html));
+    html=''; html+=r('Dielectric Q (Qd)', `${fmt(Qd,2)}`); html+=r('Radiation Q (Qr)', `${fmt(Qr,2)}`); html+=r('Combined Q', `${fmt(Q_total,2)}`); html+=r('Bandwidth (est.)', `${fmt(BWpct,3)}`); html+=`<div class="note">BW & Q do not include conductor/surface-wave losses. Use EM simulation for final BW.</div>`; container.appendChild(makeCard('Q & Bandwidth', html));
     html=''; html+=r('Edge Input Resistance R_edge (est.)', `${fmt(Rin_edge,2)} Ω`); html+=r(`Inset Depth y (Z₀=${fmt2(Z0,0)} Ω)`, `${fmt2(yin_m*1000,3)} mm${inset_note}`); html+=r('Inset Feed Length (suggest)', `${fmt2(insetLen*1000,3)} mm`); html+=r('Inset Feed Width (suggest)', `${fmt2(insetW*1000,3)} mm`); html+=`<div class="note">Model: R_in(y)=R_edge ⋅ cos²(π y / L). If Z₀ > R_edge, inset matching is not possible.</div>`; container.appendChild(makeCard('Inset Feed & Edge Resistance', html));
     html=''; html+=r(`Microstrip Feedline W_f (Z₀=${fmt2(Z0,0)} Ω)`, `${fmt2(Wf_mm,3)} mm`); html+=r('Feedline w/h', `${fmt(feed.w_h,4)}`); html+=r('Feedline ε_eff', `${fmt(feed.eps_eff_line,4)}`); html+=`<div class="note">Width computed with Hammerstad/Jensen closed-form.</div>`; container.appendChild(makeCard('Microstrip Feedline', html));
     html=''; modes.forEach(m=>html+=r(m.name,`${fmt2(m.f/1e9,4)} GHz`)); html+=`<div class="note">Cavity-model estimates; verify with full-wave EM.</div>`; container.appendChild(makeCard('Multi-mode Frequencies', html));
