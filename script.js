@@ -65,7 +65,7 @@ function switchTab(name){
     let yin_m=0, inset_note='';
     if(Z0 <= Rin_edge){ yin_m = (L / Math.PI) * Math.acos(Math.sqrt(clamp(Z0/Rin_edge,0,1))); } else { yin_m=0; inset_note=' (Z₀ > R_edge — inset matching not possible)'; }
     const insetLen = W/2, insetW = W/10;
-    function fmn(m,n){ return (c/(2*Math.sqrt(erEff))) * Math.sqrt(Math.pow(m/Leff,2)+Math.pow(n/W,2)); }
+    function fmn(m,n){ return (c/(2*Math.sqrt(erEff))) * Math.sqrt(Math.pow(m/L,2)+Math.pow(n/W,2)); }
     const modes = [{name:'TM10 (fund.)',f:fmn(1,0)},{name:'TM01',f:fmn(0,1)},{name:'TM20',f:fmn(2,0)},{name:'TM11',f:fmn(1,1)},{name:'TM02',f:fmn(0,2)}];
     const Aphys = L*W; const D_lin = eta_ap * (4*Math.PI*Aphys)/(lambda0*lambda0); const D_dBi = 10*Math.log10(D_lin); const eta_rad = Qr/(Qr+Qd); const G_lin = eta_rad * D_lin; const G_dBi = 10*Math.log10(G_lin);
     const feed = microstripWidth(Z0, er, h); const Wf_mm = feed.Wf*1000;
